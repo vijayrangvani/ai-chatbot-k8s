@@ -1,0 +1,16 @@
+# Runs automatically on `git commit` (after `pre-commit install`). Blocks the commit if a check fails.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]           # fix what it can, fail on the rest
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key  # stops you committing SSH/TLS keys
+      - id: check-added-large-files

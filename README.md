@@ -35,6 +35,7 @@ This starter defaults to FastAPI because most AI projects end up served behind a
 2. **Entry point:** replace `src/app/main.py` with a plain function:
    ```python
    """Entry point. Run: make run  (or: python -m app.main)"""
+
    import logging
 
    from app.config import get_settings

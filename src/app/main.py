@@ -3,7 +3,7 @@
 import logging
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
@@ -13,6 +13,7 @@ logging.basicConfig(
     level=settings.log_level,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
+log = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.app_name)
 
@@ -41,3 +42,14 @@ def ask_ollama(messages: list[dict]) -> str:
     )
     response.raise_for_status()
     return response.json()["message"]["content"]
+
+
+@app.post("/chat", response_model=ChatResponse)
+def chat(request: ChatRequest) -> ChatResponse:
+    messages = [{"role": "user", "content": request.message}]
+    try:
+        reply = ask_ollama(messages)
+    except httpx.HTTPError as exc:
+        log.error("Ollama call failed %s", exc)
+        raise HTTPException(status_code=503, detail="LLM Service not available") from exc
+    return ChatResponse(session_id=request.session_id, reply=reply)

@@ -6,10 +6,11 @@ from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 
-from app import models  # noqa: F401
 from app.config import get_settings
-from app.db import Base, engine
+from app.db import Base, DbSession, engine
+from app.models import Message
 
 settings = get_settings()
 logging.basicConfig(
@@ -55,11 +56,22 @@ def ask_ollama(messages: list[dict]) -> str:
 
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest) -> ChatResponse:
-    messages = [{"role": "user", "content": request.message}]
+def chat(request: ChatRequest, db: DbSession) -> ChatResponse:
+
+    history = db.scalars(
+        select(Message).where(Message.session_id == request.session_id).order_by(Message.id)
+    ).all()
+
+    messages = [{"role": m.role, "content": m.content} for m in history]
+
+    messages.append({"role": "uuserser", "content": request.message})
     try:
         reply = ask_ollama(messages)
     except httpx.HTTPError as exc:
         log.error("Ollama call failed %s", exc)
         raise HTTPException(status_code=503, detail="LLM Service not available") from exc
+
+    db.add(Message(session_id=request.session_id, role="user", content=request.message))
+    db.add(Message(session_id=request.session_id, role="assistant", content=reply))
+
     return ChatResponse(session_id=request.session_id, reply=reply)

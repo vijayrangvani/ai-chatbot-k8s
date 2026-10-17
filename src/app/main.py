@@ -57,14 +57,13 @@ def ask_ollama(messages: list[dict]) -> str:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest, db: DbSession) -> ChatResponse:
-
     history = db.scalars(
         select(Message).where(Message.session_id == request.session_id).order_by(Message.id)
     ).all()
 
     messages = [{"role": m.role, "content": m.content} for m in history]
 
-    messages.append({"role": "uuserser", "content": request.message})
+    messages.append({"role": "user", "content": request.message})
     try:
         reply = ask_ollama(messages)
     except httpx.HTTPError as exc:

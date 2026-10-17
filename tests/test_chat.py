@@ -22,3 +22,23 @@ def test_chat_returns_503_when_llm_down(monkeypatch):
     response = client.post("/chat", json={"session_id": "s1", "message": "hi"})
 
     assert response.status_code == 503
+
+
+def test_chat_sends_session_history(monkeypatch):
+    received = []
+
+    def fake_ollama(messages):
+        received.append(messages)
+        return "ok"
+
+    monkeypatch.setattr(main, "ask_ollama", fake_ollama)
+    first = client.post("/chat", json={"session_id": "r1", "message": "My colour is blue"})
+    second = client.post("/chat", json={"session_id": "r1", "message": "What is my colour?"})
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert received[1] == [
+        {"role": "user", "content": "My colour is blue"},
+        {"role": "assistant", "content": "ok"},
+        {"role": "user", "content": "What is my colour?"},
+    ]

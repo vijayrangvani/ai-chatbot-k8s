@@ -1,12 +1,15 @@
 """Entry point. Run: make run  (or: uvicorn app.main:app --reload)"""
 
 import logging
+from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from app import models  # noqa: F401
 from app.config import get_settings
+from app.db import Base, engine
 
 settings = get_settings()
 logging.basicConfig(
@@ -15,7 +18,14 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-app = FastAPI(title=settings.app_name)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 
 @app.get("/health")

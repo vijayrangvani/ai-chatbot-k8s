@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:0.5b"
+    database_url: str = "postgresql+psycopg://app:app@localhost:5432/chatdb"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

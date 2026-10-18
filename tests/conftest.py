@@ -1,8 +1,10 @@
+import fakeredis
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app import cache
 from app.db import Base, get_db
 from app.main import app
 
@@ -33,3 +35,11 @@ def test_db():
     yield
     app.dependency_overrides.clear()
     Base.metadata.drop_all(test_engine)
+
+
+@pytest.fixture(autouse=True)
+def fake_redis(monkeypatch):
+    """Fresh in-memory Redis per test, so no state leaks between tests or into chat-redis."""
+    fake = fakeredis.FakeRedis(decode_responses=True)
+    monkeypatch.setattr(cache, "client", fake)
+    return fake

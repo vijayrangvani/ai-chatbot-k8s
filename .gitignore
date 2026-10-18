@@ -23,3 +23,5 @@ htmlcov/
 # infra
 .terraform/
 *.tfstate*
+# Kubernetes secrets (commit only the .example)
+k8s/02-secret.yaml

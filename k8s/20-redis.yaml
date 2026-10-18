@@ -1,0 +1,45 @@
+# Redis: cache only, no volume and no disk persistence -> a restart starts empty, and the
+# api rebuilds the cache from Postgres (avoids stale history after a restart).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: ai-chatbot
+  labels: { app: redis }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: redis }
+  template:
+    metadata:
+      labels: { app: redis }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["redis-server", "--save", "", "--appendonly", "no"]
+          ports:
+            - containerPort: 6379
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits:   { memory: "128Mi" }
+          readinessProbe:
+            exec: { command: ["redis-cli", "ping"] }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            exec: { command: ["redis-cli", "ping"] }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis                        # hostname in REDIS_URL
+  namespace: ai-chatbot
+spec:
+  type: ClusterIP
+  selector: { app: redis }
+  ports:
+    - port: 6379
+      targetPort: 6379

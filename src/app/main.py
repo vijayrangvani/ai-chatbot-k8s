@@ -36,6 +36,16 @@ def health() -> dict:
     return {"status": "ok", "environment": settings.environment}
 
 
+SYSTEM_PROMPT = {
+    "role": "system",
+    "content": (
+        "You are a helpful assistant. The earlier messages in this conversation "
+        "are real. Use them to answer questions about the user, such as their "
+        "name or preferences."
+    ),
+}
+
+
 class ChatRequest(BaseModel):
     session_id: str = Field(min_length=1)
     message: str = Field(min_length=1)
@@ -75,7 +85,7 @@ def chat(request: ChatRequest, db: DbSession) -> ChatResponse:
     # None = cache miss or Redis down; Postgres is the source of truth either way.
     history = cached if cached is not None else load_recent_history(db, request.session_id)
 
-    messages = [*history, {"role": "user", "content": request.message}]
+    messages = [SYSTEM_PROMPT, *history, {"role": "user", "content": request.message}]
     try:
         reply = ask_ollama(messages)
     except httpx.HTTPError as exc:

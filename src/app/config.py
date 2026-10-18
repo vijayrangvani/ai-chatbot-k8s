@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:1.5b"
     database_url: str = "postgresql+psycopg://app:app@localhost:5432/chatdb"
+    redis_url: str = "redis://localhost:6379/0"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

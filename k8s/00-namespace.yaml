@@ -1,0 +1,5 @@
+# Namespace = folder for all ai-chatbot objects. Delete everything: kubectl delete namespace ai-chatbot
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-chatbot

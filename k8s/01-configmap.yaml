@@ -1,0 +1,11 @@
+# ConfigMap = non-secret settings, injected into the api as env vars.
+# Hostnames are Service names (db, redis, ollama), same as in docker-compose.yml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-chatbot-config
+  namespace: ai-chatbot
+data:
+  REDIS_URL: "redis://redis:6379/0"
+  OLLAMA_URL: "http://ollama:11434"
+  OLLAMA_MODEL: "qwen2.5:1.5b"

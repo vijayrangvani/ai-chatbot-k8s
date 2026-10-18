@@ -1,0 +1,72 @@
+# Postgres: PVC (data survives pod restarts) + Deployment + Service "db".
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-data
+  namespace: ai-chatbot
+spec:
+  accessModes: [ReadWriteOnce]       # one node mounts it read-write
+  resources:
+    requests: { storage: 1Gi }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  namespace: ai-chatbot
+  labels: { app: db }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: db }
+  strategy:
+    type: Recreate                   # RWO volume: old pod must release it before the new one starts
+  template:
+    metadata:
+      labels: { app: db }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_DB
+              value: chatdb
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: ai-chatbot-secret, key: POSTGRES_PASSWORD } }
+            - name: PGDATA           # subdirectory: initdb refuses a mount root that isn't empty
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits:   { memory: "512Mi" }
+          readinessProbe:            # same check as the compose healthcheck
+            exec: { command: ["pg_isready", "-U", "app", "-d", "chatdb"] }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            exec: { command: ["pg_isready", "-U", "app", "-d", "chatdb"] }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: db-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db                           # hostname in DATABASE_URL
+  namespace: ai-chatbot
+spec:
+  type: ClusterIP
+  selector: { app: db }
+  ports:
+    - port: 5432
+      targetPort: 5432

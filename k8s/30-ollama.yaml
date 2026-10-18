@@ -1,0 +1,64 @@
+# Ollama: PVC for downloaded models (/root/.ollama) + Deployment + Service "ollama".
+# Pull the model once after the first deploy (it lives on the PVC afterwards):
+#   kubectl -n ai-chatbot exec deploy/ollama -- ollama pull qwen2.5:1.5b
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: ai-chatbot
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: 5Gi }       # qwen2.5:1.5b is ~1GB; room for one or two more models
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: ai-chatbot
+  labels: { app: ollama }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: ollama }
+  strategy:
+    type: Recreate                   # RWO volume: old pod must release it before the new one starts
+  template:
+    metadata:
+      labels: { app: ollama }
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama
+          ports:
+            - containerPort: 11434
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+          resources:
+            requests: { cpu: "500m", memory: "2Gi" }
+            limits:   { memory: "3Gi" }   # no CPU limit: throttling makes inference very slow
+          readinessProbe:
+            httpGet: { path: /, port: 11434 }   # returns "Ollama is running"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: 11434 }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+      volumes:
+        - name: models
+          persistentVolumeClaim: { claimName: ollama-models }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama                       # hostname in OLLAMA_URL
+  namespace: ai-chatbot
+spec:
+  type: ClusterIP
+  selector: { app: ollama }
+  ports:
+    - port: 11434
+      targetPort: 11434

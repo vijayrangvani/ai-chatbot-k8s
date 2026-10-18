@@ -39,6 +39,7 @@ def test_chat_sends_session_history(monkeypatch):
     assert first.status_code == 200
     assert second.status_code == 200
     assert received[1] == [
+        main.SYSTEM_PROMPT,
         {"role": "user", "content": "My colour is blue"},
         {"role": "assistant", "content": "ok"},
         {"role": "user", "content": "What is my colour?"},
@@ -73,7 +74,7 @@ def test_chat_cache_hit_uses_cached_history(monkeypatch):
     response = client.post("/chat", json={"session_id": "h1", "message": "new"})
 
     assert response.status_code == 200
-    assert received[0] == [*cached, {"role": "user", "content": "new"}]
+    assert received[0] == [main.SYSTEM_PROMPT, *cached, {"role": "user", "content": "new"}]
     assert len(cache.get_history("h1")) == 4  # hit appends only the 2 new messages
 
 
@@ -94,6 +95,7 @@ def test_chat_falls_back_to_postgres_when_redis_down(monkeypatch):
     assert response.status_code == 200
     # Redis is unreachable, so this history can only have come from Postgres.
     assert received[1] == [
+        main.SYSTEM_PROMPT,
         {"role": "user", "content": "My colour is blue"},
         {"role": "assistant", "content": "ok"},
         {"role": "user", "content": "What is my colour?"},

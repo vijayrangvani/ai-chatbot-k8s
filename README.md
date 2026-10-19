@@ -130,6 +130,31 @@ graph TD
 | **HPA** | Adds API pods when average CPU goes above 50% of the request, up to 5 |
 | **ConfigMap / Secret** | Connection settings; the database password lives only in the Secret |
 
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as API
+    participant R as Redis
+    participant P as PostgreSQL
+    participant O as Ollama
+
+    C->>A: POST /chat {session_id, message}
+    A->>R: get last 10 messages
+    alt cache hit
+        R-->>A: history
+    else miss or Redis down
+        A->>P: SELECT last 10 (oldest first)
+        P-->>A: history
+    end
+    A->>O: system prompt + history + new message
+    O-->>A: reply
+    A->>P: INSERT user + assistant, COMMIT
+    A->>R: append 2 new (hit) or rebuild (miss)
+    A-->>C: {session_id, reply}
+```
+
 ---
 
 ## 🛠️ Technology Stack

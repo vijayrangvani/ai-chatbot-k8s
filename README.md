@@ -30,7 +30,7 @@
 - [⚡ Quick Start](#-quick-start)
 - [⚙️ Setup & Installation](#️-setup--installation)
 - [🚀 Request Walkthrough](#-request-walkthrough)
-- [🎥 YouTube Demonstration](#-youtube-demonstration)
+- [🎥 Video Demonstration](#-video-demonstration)
 - [🧩 Troubleshooting](#-troubleshooting)
 - [🧪 Testing](#-testing)
 - [⚠️ Known Limitations](#️-known-limitations)
@@ -342,7 +342,7 @@ kubectl -n ai-chatbot delete pod load    # stop the load; replicas return to 2 a
 
 ---
 
-## 🎥 YouTube Demonstration
+## 🎥 Video Demonstration
 
 | # | Section |
 |---|---------|
@@ -460,7 +460,7 @@ Tests never touch real services: the LLM call is replaced by a fake, PostgreSQL 
 | **Expose using Service** | `api` NodePort Service | ✅ |
 | **Store chat history** | PostgreSQL, verified across pod deletion | ✅ |
 | **Horizontal Scaling (Bonus)** | HPA: 2–5 API pods at 50% CPU (`k8s/50-hpa.yaml`) | ✅ |
-| **YouTube Submission** | Chatbot working inside Kubernetes | ⬜ |
+| **Video Submission** | Chatbot working inside Kubernetes | ⬜ |
 
 ---
 

@@ -1,0 +1,16 @@
+# HPA: scale the api between 2 and 5 pods to keep average CPU near 50% of its request.
+# Needs metrics-server installed in the cluster.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api
+  namespace: ai-chatbot
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api }
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 50 }   # % of the pod's CPU *request*

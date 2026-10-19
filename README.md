@@ -30,7 +30,7 @@
 - [⚡ Quick Start](#-quick-start)
 - [⚙️ Setup & Installation](#️-setup--installation)
 - [🚀 Request Walkthrough](#-request-walkthrough)
-- [🎥 YouTube Demonstration](#-youtube-demonstration)
+- [🎥 Video Demonstration](#-video-demonstration)
 - [🧩 Troubleshooting](#-troubleshooting)
 - [🧪 Testing](#-testing)
 - [⚠️ Known Limitations](#️-known-limitations)
@@ -129,6 +129,31 @@ graph TD
 | **Service** | One stable address for the API pods (port 80 → 8000) |
 | **HPA** | Adds API pods when average CPU goes above 50% of the request, up to 5 |
 | **ConfigMap / Secret** | Connection settings; the database password lives only in the Secret |
+
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as API
+    participant R as Redis
+    participant P as PostgreSQL
+    participant O as Ollama
+
+    C->>A: POST /chat {session_id, message}
+    A->>R: get last 10 messages
+    alt cache hit
+        R-->>A: history
+    else miss or Redis down
+        A->>P: SELECT last 10 (oldest first)
+        P-->>A: history
+    end
+    A->>O: system prompt + history + new message
+    O-->>A: reply
+    A->>P: INSERT user + assistant, COMMIT
+    A->>R: append 2 new (hit) or rebuild (miss)
+    A-->>C: {session_id, reply}
+```
 
 ---
 
@@ -317,7 +342,7 @@ kubectl -n ai-chatbot delete pod load    # stop the load; replicas return to 2 a
 
 ---
 
-## 🎥 YouTube Demonstration
+## 🎥 Video Demonstration
 
 | # | Section |
 |---|---------|
@@ -435,7 +460,7 @@ Tests never touch real services: the LLM call is replaced by a fake, PostgreSQL 
 | **Expose using Service** | `api` NodePort Service | ✅ |
 | **Store chat history** | PostgreSQL, verified across pod deletion | ✅ |
 | **Horizontal Scaling (Bonus)** | HPA: 2–5 API pods at 50% CPU (`k8s/50-hpa.yaml`) | ✅ |
-| **YouTube Submission** | Chatbot working inside Kubernetes | ⬜ |
+| **Video Submission** | Chatbot working inside Kubernetes | ⬜ |
 
 ---
 
